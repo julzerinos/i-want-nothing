@@ -37,6 +37,7 @@ namespace DefaultNamespace
         {
             mini.transform.position = Vector3.zero;
             // mini.gameObject.SetActive(true);
+            mini.Go();
         }
 
         private Mini SpawnMini(int id)
@@ -45,6 +46,7 @@ namespace DefaultNamespace
             mini.SetColor(Colors[_minis.Count]);
             mini.Destroyed += OnMiniDestroyed;
             _minis.Add(id, mini);
+            mini.Go();
             return mini;
         }
 

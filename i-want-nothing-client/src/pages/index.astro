@@ -34,7 +34,7 @@ import "../styles/global.css"
             const buffer = new Uint8Array(2)
             const inputData = { left: false, right: false } as { left: boolean; right: boolean }
 
-            this.websocket = new WebSocket(`ws://10.67.55.114:8083/`)
+            this.websocket = new WebSocket(`ws://172.20.10.14:8083/`)
 
             this.websocket.addEventListener("close", e => {
                 statusDiv.textContent = "Connection closed."

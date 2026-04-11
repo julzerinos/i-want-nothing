@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
@@ -7,40 +8,60 @@ namespace DefaultNamespace
 {
     public class PaintLayer : MonoBehaviour
     {
-        public int brushSize = 10;
+        [SerializeField] private float collisionThreshold;
+
         public Color brushColor = Color.black;
         public Texture2D brushTexture;
         [Range(0, 1)] public float brushHardness = 1f;
 
         Material gpuDrawerMaterial;
-        [HideInInspector] public DrawZone _drawZone;
+
+        private Texture2D drawMapTexture;
+
 
         private void Awake()
         {
-            gpuDrawerMaterial = new Material(Shader.Find("Custom/Painting"));
-            gpuDrawerMaterial.SetTexture("_BrushTexture", brushTexture);
-            _drawZone = GetComponent<DrawZone>();
+            drawMapTexture = new Texture2D(1028, 1028);
+            var colors = new Color[1028 * 1028];
+            drawMapTexture.SetPixels(colors);
+
+            GetComponent<Renderer>().material.mainTexture = drawMapTexture;
         }
 
-        public void Paint(Vector2 at, Color color)
+        public bool GetCollision(float u, float v)
         {
-            gpuDrawerMaterial.SetColor("_BrushColor", color);
-            _drawZone.DrawTexture = DrawOnTextureGPU(_drawZone.DrawTexture, at);
-            _drawZone.SetCollision(at.x, at.y, true);
+            var color = drawMapTexture.GetPixelBilinear(u, v);
+
+            return color.a > collisionThreshold;
         }
 
-        RenderTexture DrawOnTextureGPU(Texture src, Vector2 nrmPos)
+
+        private void FixedUpdate()
         {
-            int srcWidth = src.width;
+            drawMapTexture.Apply();
+        }
 
-            gpuDrawerMaterial.SetVector("_BrushPosition", nrmPos);
-            gpuDrawerMaterial.SetFloat("_BrushSize", brushSize / (float)srcWidth);
 
-            RenderTexture copiedTexture = new RenderTexture(srcWidth, src.height, 32);
-            Graphics.Blit(src, copiedTexture, gpuDrawerMaterial);
-            DestroyImmediate(src);
+        public void Paint(Vector2 at, Color color, int size)
+        {
+            var x = Mathf.RoundToInt(at.x * drawMapTexture.width);
+            var y = Mathf.RoundToInt(at.y * drawMapTexture.height);
 
-            return copiedTexture;
+            var halfBrush = size / 2;
+            Color[] colors = new Color[size * size];
+            for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
+            {
+                colors[i * size + j] = color;
+            }
+
+            drawMapTexture.SetPixels(
+                Mathf.RoundToInt(x - halfBrush),
+                Mathf.RoundToInt(y - halfBrush),
+                size,
+                size,
+                colors
+            );
         }
     }
 }

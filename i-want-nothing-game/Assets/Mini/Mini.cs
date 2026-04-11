@@ -6,6 +6,8 @@ public class Mini : MonoBehaviour
 {
     public event Action<Mini> Destroyed;
 
+    [SerializeField] private int brushSize = 10;
+    [SerializeField] private float collisionDistanceFactor = .33f;
     [SerializeField] private float speed = 1;
     [SerializeField] private float angularSpeed = 1;
 
@@ -18,6 +20,9 @@ public class Mini : MonoBehaviour
 
     private GameObject _collisionMarker;
 
+    private bool _isSafe;
+    private float _safeTimeout;
+
     private void Awake()
     {
         _faceRenderer = GetComponentInChildren<MeshRenderer>();
@@ -29,27 +34,37 @@ public class Mini : MonoBehaviour
     {
         transform.Translate(speed * _direction);
         var uvPosition = new Vector2(transform.position.x, transform.position.z) / 30 + Vector2.one / 2;
-        _paintLayer.Paint(uvPosition, _color);
+        _paintLayer.Paint(uvPosition, _color, 10);
     }
 
     private void Update()
     {
-        _collisionMarker.transform.localPosition = _direction;
+        if ((_safeTimeout -= Time.deltaTime) <= 0) _isSafe = false;
+
+        _collisionMarker.transform.localPosition = collisionDistanceFactor * _direction;
 
         var uv = new Vector2(
                      _collisionMarker.transform.position.x,
                      _collisionMarker.transform.position.z
                  ) / 30 +
                  Vector2.one / 2;
-        var collides = _paintLayer._drawZone.GetCollision(uv.x, uv.y);
-        if (collides) Debug.Log("Would destroy");
+        var collides = _paintLayer.GetCollision(uv.x, uv.y);
+        // if (collides && !_isSafe) Destroy();
     }
+
 
     public void Rotate(bool left = false, bool right = false)
     {
         var modifier = (left ? -1 : 0) + (right ? 1 : 0);
         var quaternion = Quaternion.AngleAxis(modifier * angularSpeed, Vector3.up);
         _direction = quaternion * _direction;
+    }
+
+    public void Go()
+    {
+        // TODO: Set spawn point
+        _isSafe = true;
+        _safeTimeout = 2f;
     }
 
     public void SetColor(Color color)
@@ -60,7 +75,7 @@ public class Mini : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.gameObject.CompareTag("Wall")) return;
+        if (!other.gameObject.CompareTag("Wall") && !other.gameObject.CompareTag("Player")) return;
 
         Destroy();
     }
