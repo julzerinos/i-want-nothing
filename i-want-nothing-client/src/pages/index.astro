@@ -1,0 +1,135 @@
+---
+import "../styles/global.css"
+---
+
+<html lang='en' class='touch-none select-none'>
+    <head>
+        <meta charset='utf-8' />
+        <link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+        <link rel='icon' href='/favicon.ico' />
+        <meta name='viewport' content='width=device-width' />
+        <meta name='generator' content={Astro.generator} />
+        <title>I want nothing client</title>
+    </head>
+    <body class=''>
+        <websocket-wrapper>
+            <div class='absolute w-full h-full bg-amber-300'>
+                <div id='status' class='flex justify-center select-none'>
+                    Attempting to connect...
+                </div>
+                <div id='capture-left' class='bg-red-300 absolute left-0 right-1/2 h-full'></div>
+                <div id='capture-right' class='bg-green-300 absolute right-0 left-1/2 h-full'></div>
+            </div>
+        </websocket-wrapper>
+    </body>
+</html>
+
+<script>
+    class WebsocketWrapper extends HTMLElement {
+        websocket: WebSocket | null = null
+
+        connectedCallback() {
+            const statusDiv = document.querySelector("#status") as HTMLDivElement
+
+            const buffer = new Uint8Array(2)
+            const inputData = { left: false, right: false } as { left: boolean; right: boolean }
+
+            this.websocket = new WebSocket(`ws://10.67.55.114:8083/`)
+
+            this.websocket.addEventListener("close", e => {
+                statusDiv.textContent = "Connection closed."
+            })
+
+            this.websocket.addEventListener("error", e => {
+                statusDiv.textContent = "Failed to connect."
+            })
+
+            this.websocket.addEventListener("open", e => {
+                statusDiv.textContent = "Connected!"
+
+                let byte = 1 << 5
+                byte |= 1 << 4
+                buffer[0] = byte
+                this.websocket?.send(buffer)
+            })
+
+            this.websocket.addEventListener("message", event => {
+                // TODO: Disconnect game if end message
+            })
+
+            const inputUpdate = () => {
+                if (!inputData.left && !inputData.right) return
+
+                let byte = 0
+                byte |= (inputData.left ? 1 : 0) << 4
+                byte |= (inputData.right ? 1 : 0) << 3
+                byte |= 1 << 5
+
+                console.log(`Sending byte ${byte}`)
+
+                buffer[0] = byte
+                this.websocket?.send(buffer)
+            }
+
+            setInterval(inputUpdate, 20)
+
+            const setCaptureInput = (side: "left" | "right") => {
+                const captureDiv = document.querySelector(`#capture-${side}`) as HTMLDivElement
+
+                captureDiv.addEventListener("mousedown", () => {
+                    console.log("start", side)
+
+                    inputData[side] = true
+                })
+                captureDiv.addEventListener("mouseup", () => {
+                    console.log("end", side)
+
+                    inputData[side] = false
+                })
+
+                captureDiv.addEventListener("touchstart", () => {
+                    console.log("start", side)
+
+                    inputData[side] = true
+                })
+                captureDiv.addEventListener("touchend", () => {
+                    console.log("end", side)
+
+                    inputData[side] = false
+                })
+            }
+
+            setCaptureInput("left")
+            setCaptureInput("right")
+
+            // captureElement.addEventListener("click", evt => {
+            //     const mouseEvent = evt as MouseEvent | null
+            //     if (mouseEvent)
+            //         this.websocket?.send(
+            //             JSON.stringify({
+            //                 x: mouseEvent.clientX / window.innerWidth,
+            //                 y: mouseEvent.clientY / window.innerHeight,
+            //             }),
+            //         )
+            // })
+
+            // captureElement.addEventListener("touchstart", evt => {
+            //     this.websocket?.send("yeh")
+            //     const touchEvent = evt as TouchEvent | null
+            //     if (touchEvent)
+            //         this.websocket?.send(
+            //             JSON.stringify({
+            //                 x: touchEvent.touches[0].clientX / window.innerWidth,
+            //                 y: touchEvent.touches[0].clientY / window.innerHeight,
+            //             }),
+            //         )
+            // })
+        }
+
+        disconnectedCallback() {
+            this.websocket?.close()
+        }
+    }
+
+    customElements.define("websocket-wrapper", WebsocketWrapper)
+</script>
