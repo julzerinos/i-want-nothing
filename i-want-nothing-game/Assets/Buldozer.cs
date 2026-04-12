@@ -1,12 +1,15 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 namespace DefaultNamespace
 {
     public class Buldozer : MonoBehaviour
     {
         [SerializeField] private int brushSize = 20;
+        [SerializeField] private float rotationNoiseFactor = 0.1f;
         [SerializeField] private float speed = 1;
         [SerializeField] private float angularSpeed = 1;
 
@@ -27,12 +30,13 @@ namespace DefaultNamespace
             _model = transform.Find("Model");
         }
 
+
         private void Update()
         {
             var input = _input.actions["Move"].ReadValue<Vector2>();
             _angularSpeed = input.x;
             _speed = input.y;
-            
+
             if (!Mathf.Approximately(_angularSpeed, 0))
             {
                 var quaternion = Quaternion.AngleAxis(_angularSpeed * angularSpeed, Vector3.up);
@@ -45,7 +49,12 @@ namespace DefaultNamespace
                            ) / 30 +
                            Vector2.one / 2;
             _paintLayer.Paint(position, new Color(0, 0, 0, 0), brushSize);
-            _model.LookAt(transform.position + _direction);
+
+            var lookRotation = Quaternion.LookRotation(_direction, Vector3.up);
+            var noiseRotation =  Random.rotation;
+
+            var rotation = Quaternion.Lerp(lookRotation, noiseRotation, rotationNoiseFactor);
+            _model.rotation = rotation;
         }
 
         private void FixedUpdate()

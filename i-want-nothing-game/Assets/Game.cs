@@ -1,13 +1,17 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace DefaultNamespace
 {
     public class Game : MonoBehaviour
     {
         [SerializeField] private Mini miniPrefab;
+
+        [SerializeField] private Text _timerText;
 
         private readonly Dictionary<int, Mini> _minis = new();
 
@@ -19,6 +23,23 @@ namespace DefaultNamespace
             connection.Connected += OnConnected;
             connection.MiniDataReceived += OnMiniDataReceived;
             await connection.Initialize();
+        }
+
+        private void Start()
+        {
+            StartCoroutine(TimerTimer());
+        }
+
+        private IEnumerator TimerTimer()
+        {
+            var timeLeft = 180f;
+            while ((timeLeft -= Time.deltaTime) >= 0)
+            {
+                _timerText.text = Mathf.FloorToInt(timeLeft).ToString();
+                yield return null;
+            }
+            
+            RestartGame();
         }
 
         private void OnConnected()
