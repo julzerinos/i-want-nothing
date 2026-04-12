@@ -1,5 +1,12 @@
 ---
+export const prerender = true
+
+import ip from "ip"
+
 import "../styles/global.css"
+
+const ipAddress = ip.address()
+console.log(`trying address ${ipAddress}`)
 ---
 
 <html lang='en' class='touch-none select-none'>
@@ -12,13 +19,15 @@ import "../styles/global.css"
         <title>I want nothing client</title>
     </head>
     <body class=''>
-        <websocket-wrapper>
-            <div class='absolute w-full h-full bg-amber-300'>
-                <div id='status' class='flex justify-center select-none'>
-                    Attempting to connect...
+        <websocket-wrapper data-ip={ipAddress}>
+            <div class='absolute w-full h-full bg-amber-100 py-4'>
+                <div id='status' class='flex justify-center'>Attempting to connect...</div>
+                <div id='capture-left' class='bg-red-300 absolute left-0 right-1/2 h-full'>
+                    <div class='text-gray-700 text-6xl pt-6 text-center'>TURN LEFT</div>
                 </div>
-                <div id='capture-left' class='bg-red-300 absolute left-0 right-1/2 h-full'></div>
-                <div id='capture-right' class='bg-green-300 absolute right-0 left-1/2 h-full'></div>
+                <div id='capture-right' class='bg-green-300 absolute right-0 left-1/2 h-full'>
+                    <div class='text-gray-700 text-6xl pt-6 text-center'>TURN RIGHT</div>
+                </div>
             </div>
         </websocket-wrapper>
     </body>
@@ -34,7 +43,9 @@ import "../styles/global.css"
             const buffer = new Uint8Array(2)
             const inputData = { left: false, right: false } as { left: boolean; right: boolean }
 
-            this.websocket = new WebSocket(`ws://172.20.10.14:8083/`)
+            const ip = this.dataset.ip
+            this.websocket = new WebSocket(`ws://${ip}:8083/`)
+            console.log(`trying to connect to ${ip}`)
 
             this.websocket.addEventListener("close", e => {
                 statusDiv.textContent = "Connection closed."
@@ -45,7 +56,7 @@ import "../styles/global.css"
             })
 
             this.websocket.addEventListener("open", e => {
-                statusDiv.textContent = "Connected!"
+                statusDiv.textContent = `Connected! (${ip})`
 
                 let byte = 1 << 5
                 byte |= 1 << 4

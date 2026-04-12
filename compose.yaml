@@ -1,0 +1,13 @@
+services:
+    wsserver:
+        build:
+            context: ./i-want-nothing-server
+            dockerfile: containerfile
+        ports:
+            - "8083:8083"
+    client:
+        build:
+            context: ./i-want-nothing-client
+            dockerfile: containerfile
+        ports:
+            - "8084:8084"

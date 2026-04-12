@@ -3,12 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace DefaultNamespace
 {
     public class Game : MonoBehaviour
     {
+        public MiniTheme[] themes;
+
         [SerializeField] private Mini miniPrefab;
 
         [SerializeField] private Text _timerText;
@@ -38,7 +42,7 @@ namespace DefaultNamespace
                 _timerText.text = Mathf.FloorToInt(timeLeft).ToString();
                 yield return null;
             }
-            
+
             RestartGame();
         }
 
@@ -56,16 +60,25 @@ namespace DefaultNamespace
 
         private void OnMiniDestroyed(Mini mini)
         {
-            mini.transform.position = Vector3.zero;
-            // mini.gameObject.SetActive(true);
+            mini.gameObject.SetActive(false);
+            StartCoroutine(RespawnDelay(mini));
+        }
+
+        private IEnumerator RespawnDelay(Mini mini)
+        {
+            yield return new WaitForSeconds(2.5f);
+
+            mini.gameObject.SetActive(true);
+            mini.transform.position = transform.GetChild(Random.Range(0, transform.childCount)).position;
             mini.Go();
         }
 
         private Mini SpawnMini(int id)
         {
             var mini = Instantiate(miniPrefab);
-            mini.SetColor(Colors[_minis.Count]);
+            mini.SetTheme(themes[_minis.Count]);
             mini.Destroyed += OnMiniDestroyed;
+            mini.transform.position = transform.GetChild(Random.Range(0, transform.childCount)).position;
             _minis.Add(id, mini);
             mini.Go();
             return mini;
@@ -76,16 +89,16 @@ namespace DefaultNamespace
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
-        private static readonly Color[] Colors =
-        {
-            Color.red,
-            Color.blue,
-            Color.black,
-            Color.green,
-            Color.magenta,
-            Color.yellow,
-            Color.purple,
-            Color.brown
-        };
+        // private static readonly Color[] Colors =
+        // {
+        //     Color.red,
+        //     Color.blue,
+        //     Color.black,
+        //     Color.green,
+        //     Color.magenta,
+        //     Color.yellow,
+        //     Color.purple,
+        //     Color.brown
+        // };
     }
 }

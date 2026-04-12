@@ -1,6 +1,7 @@
 using System;
 using DefaultNamespace;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Mini : MonoBehaviour
 {
@@ -12,7 +13,7 @@ public class Mini : MonoBehaviour
     [SerializeField] private float angularSpeed = 1;
 
     private Vector3 _direction = Vector3.forward;
-    private Color _color;
+    private MiniTheme _theme;
 
     private MeshRenderer _faceRenderer;
 
@@ -22,19 +23,29 @@ public class Mini : MonoBehaviour
 
     private bool _isSafe;
     private float _safeTimeout;
+    private ParticleSystemRenderer _particleSystemRenderer;
+    private ParticleSystem _particleSystem;
 
     private void Awake()
     {
         _faceRenderer = GetComponentInChildren<MeshRenderer>();
         _paintLayer = FindFirstObjectByType<PaintLayer>();
         _collisionMarker = transform.Find("Collision").gameObject;
+        _particleSystemRenderer = GetComponentInChildren<ParticleSystemRenderer>();
+        _particleSystem = GetComponentInChildren<ParticleSystem>();
+    }
+
+    private void Start()
+    {
+        var buldozer = FindFirstObjectByType<Buldozer>().GetComponentInChildren<Collider>();
+        _particleSystem.trigger.AddCollider(buldozer);
     }
 
     private void FixedUpdate()
     {
         transform.Translate(speed * _direction);
         var uvPosition = new Vector2(transform.position.x, transform.position.z) / 30 + Vector2.one / 2;
-        _paintLayer.Paint(uvPosition, _color, 10);
+        _paintLayer.Paint(uvPosition, _theme.color, 10);
     }
 
     private void Update()
@@ -43,12 +54,12 @@ public class Mini : MonoBehaviour
 
         _collisionMarker.transform.localPosition = collisionDistanceFactor * _direction;
 
-        var uv = new Vector2(
-                     _collisionMarker.transform.position.x,
-                     _collisionMarker.transform.position.z
-                 ) / 30 +
-                 Vector2.one / 2;
-        var collides = _paintLayer.GetCollision(uv.x, uv.y);
+        // var uv = new Vector2(
+        //              _collisionMarker.transform.position.x,
+        //              _collisionMarker.transform.position.z
+        //          ) / 30 +
+        //          Vector2.one / 2;
+        // var collides = _paintLayer.GetCollision(uv.x, uv.y);
         // if (collides && !_isSafe) Destroy();
     }
 
@@ -62,15 +73,21 @@ public class Mini : MonoBehaviour
 
     public void Go()
     {
-        // TODO: Set spawn point
+        var onCircle = Random.onUnitCircle;
+        _particleSystemRenderer.transform.SetParent(transform, false);
+        _particleSystem.Play();
+        _direction = new Vector3(onCircle.x, 0, onCircle.y);
         _isSafe = true;
-        _safeTimeout = 2f;
+        _safeTimeout = .5f;
     }
 
-    public void SetColor(Color color)
+    public void SetTheme(MiniTheme theme)
     {
-        _faceRenderer.material.color = color;
-        _color = color;
+        _faceRenderer.material.color = theme.color;
+        _theme = theme;
+        // _particleSystemRenderer.material.mainTexture = theme.texture;
+        
+        _particleSystemRenderer.material.color = theme.color;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -82,7 +99,8 @@ public class Mini : MonoBehaviour
 
     public void Destroy()
     {
-        // gameObject.SetActive(false);
+        _particleSystemRenderer.transform.SetParent(null, false);
+        _particleSystem.Stop();
         Destroyed?.Invoke(this);
     }
 }

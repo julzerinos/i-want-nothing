@@ -32,7 +32,6 @@ wss.on("connection", (ws, request) => {
     ws.on("error", console.error)
 
     if (request.rawHeaders.includes("Main")) {
-        console.log("Set main ws")
 
         mainSocket = ws
 

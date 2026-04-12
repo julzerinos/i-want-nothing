@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DefaultNamespace;
 using UnityEngine;
 using NativeWebSocket;
+using UnityEngine.Networking;
 
 public struct MiniPayload
 {
@@ -24,7 +25,15 @@ public class Connection : MonoBehaviour
 
     public async Task Initialize()
     {
-        _websocket = new WebSocket(wsPath, new Dictionary<string, string> { { "Client", "Main" } });
+        // var request = UnityWebRequest.Get("https://ipv4.icanhazip.com/");
+        // request.downloadHandler = new DownloadHandlerBuffer();
+        // await request.SendWebRequest();
+        // var ip = request.downloadHandler.text;
+        var wsUrl = $"ws://localhost:8083/";
+
+        Debug.Log($"Attempting to connect to {wsUrl}");
+
+        _websocket = new WebSocket(wsUrl, new Dictionary<string, string> { { "Client", "Main" } });
 
         _websocket.OnOpen += OnOpen;
         _websocket.OnError += OnError;
