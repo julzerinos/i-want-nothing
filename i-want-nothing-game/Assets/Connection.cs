@@ -18,6 +18,7 @@ public class Connection : MonoBehaviour
     public event Action Connected;
     public event Action Failed;
     public event Action<MiniPayload> MiniDataReceived;
+    public event Action<string> QRCodeReceived;
 
     [SerializeField] private string wsPath;
 
@@ -81,15 +82,23 @@ public class Connection : MonoBehaviour
 
     private void OnMessage(byte[] payload)
     {
-        var data = payload[0];
+        if (payload.Length == 1)
+        {
+            var data = payload[0];
 
-        if (data >> 5 == 1)
-            MiniDataReceived?.Invoke(new MiniPayload
-            {
-                ID = data & 0b0111,
-                Right = (data & 0b1000) > 1,
-                Left = (data & 0b10000) > 1,
-            });
+            if (data >> 5 == 1)
+                MiniDataReceived?.Invoke(new MiniPayload
+                {
+                    ID = data & 0b0111,
+                    Right = (data & 0b1000) > 1,
+                    Left = (data & 0b10000) > 1,
+                });
+
+            return;
+        }
+
+        var qrCode = System.Text.Encoding.Default.GetString(payload);
+        QRCodeReceived?.Invoke(qrCode);
     }
 
     private async void OnApplicationQuit()

@@ -1,0 +1,204 @@
+<html lang='en' class='touch-none select-none'>
+
+<head>
+    <meta charset='utf-8' />
+    <link rel='icon' type='image/svg+xml' href='/favicon.svg' />
+    <link rel='icon' href='/favicon.ico' />
+    <meta name='viewport' content='width=device-width' />
+    <title>I want something!</title>
+
+    <style>
+        .touch-none {
+            touch-action: none;
+        }
+
+        .select-none {
+            user-select: none;
+        }
+
+        .absolute {
+            position: absolute;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .h-full {
+            height: 100%;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            background-color: lightyellow;
+        }
+
+        #status {
+            display: flex;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .bg-red-300 {
+            background-color: lightcoral;
+        }
+
+        .left-0 {
+            left: 0;
+        }
+
+        .right-half {
+            right: 50%;
+        }
+
+        .right-0 {
+            right: 0;
+        }
+
+        .left-half {
+            left: 50%;
+        }
+
+        .bg-green-300 {
+            background-color: lightgreen;
+        }
+
+
+        .instruction-text {
+            color: #292929;
+            font-size: 4rem;
+            padding-top: 3rem;
+            text-align: center;
+
+        }
+    </style>
+</head>
+
+<body style="margin: 0;">
+    <websocket-wrapper>
+        <div class='absolute container'>
+            <div id='status'>Attempting to connect...</div>
+            <div id='capture-left' class='bg-red-300 absolute left-0 right-half h-full'>
+                <div class='instruction-text'>TURN LEFT</div>
+            </div>
+            <div id='capture-right' class='bg-green-300 absolute right-0 left-half h-full'>
+                <div class='instruction-text'>TURN RIGHT</div>
+            </div>
+        </div>
+    </websocket-wrapper>
+</body>
+
+</html>
+
+<script>
+    class WebsocketWrapper extends HTMLElement {
+        websocket = null
+
+        connectedCallback() {
+            const statusDiv = document.querySelector("#status")
+            const buffer = new Uint8Array(2)
+            const inputData = { left: false, right: false }
+
+            const ip = "<%= ip %>"
+            this.websocket = new WebSocket(`ws://${ip}:8083/`)
+            console.log(`trying to connect to ${ip}`)
+
+            this.websocket.addEventListener("close", e => {
+                statusDiv.textContent = "Connection closed."
+            })
+
+            this.websocket.addEventListener("error", e => {
+                statusDiv.textContent = "Failed to connect."
+            })
+
+            this.websocket.addEventListener("open", e => {
+                statusDiv.textContent = `Connected! (${ip})`
+
+                let byte = 1 << 5
+                byte |= 1 << 4
+                buffer[0] = byte
+                this.websocket?.send(buffer)
+            })
+
+            this.websocket.addEventListener("message", event => {
+                // TODO: Disconnect game if end message
+                
+            })
+
+            const inputUpdate = () => {
+                if (!inputData.left && !inputData.right) return
+
+                let byte = 0
+                byte |= (inputData.left ? 1 : 0) << 4
+                byte |= (inputData.right ? 1 : 0) << 3
+                byte |= 1 << 5
+
+                console.log(`Sending byte ${byte}`)
+
+                buffer[0] = byte
+                this.websocket?.send(buffer)
+            }
+
+            setInterval(inputUpdate, 20)
+
+            const setCaptureInput = (side) => {
+                const captureDiv = document.querySelector(`#capture-${side}`)
+
+                captureDiv.addEventListener("mousedown", () => {
+                    console.log("start", side)
+
+                    inputData[side] = true
+                })
+                captureDiv.addEventListener("mouseup", () => {
+                    console.log("end", side)
+
+                    inputData[side] = false
+                })
+
+                captureDiv.addEventListener("touchstart", () => {
+                    console.log("start", side)
+
+                    inputData[side] = true
+                })
+                captureDiv.addEventListener("touchend", () => {
+                    console.log("end", side)
+
+                    inputData[side] = false
+                })
+            }
+
+            setCaptureInput("left")
+            setCaptureInput("right")
+
+            // captureElement.addEventListener("click", evt => {
+            //     const mouseEvent = evt as MouseEvent | null
+            //     if (mouseEvent)
+            //         this.websocket?.send(
+            //             JSON.stringify({
+            //                 x: mouseEvent.clientX / window.innerWidth,
+            //                 y: mouseEvent.clientY / window.innerHeight,
+            //             }),
+            //         )
+            // })
+
+            // captureElement.addEventListener("touchstart", evt => {
+            //     this.websocket?.send("yeh")
+            //     const touchEvent = evt as TouchEvent | null
+            //     if (touchEvent)
+            //         this.websocket?.send(
+            //             JSON.stringify({
+            //                 x: touchEvent.touches[0].clientX / window.innerWidth,
+            //                 y: touchEvent.touches[0].clientY / window.innerHeight,
+            //             }),
+            //         )
+            // })
+        }
+
+        disconnectedCallback() {
+            this.websocket?.close()
+        }
+    }
+
+    customElements.define("websocket-wrapper", WebsocketWrapper)
+</script>

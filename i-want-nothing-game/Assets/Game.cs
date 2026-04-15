@@ -15,9 +15,10 @@ namespace DefaultNamespace
 
         [SerializeField] private Mini miniPrefab;
 
-        [SerializeField] private Text _timerText;
+        [SerializeField] private Text _qrCodeText;
 
         private readonly Dictionary<int, Mini> _minis = new();
+        private readonly Dictionary<int, Mini> _minisBots = new();
 
         private async void Awake()
         {
@@ -26,36 +27,45 @@ namespace DefaultNamespace
             var connection = FindFirstObjectByType<Connection>();
             connection.Connected += OnConnected;
             connection.MiniDataReceived += OnMiniDataReceived;
+            connection.QRCodeReceived += OnQRCodeReceived;
             await connection.Initialize();
         }
 
-        private void Start()
+        // private void Start()
+        // {
+        //     StartCoroutine(TimerTimer());
+        // }
+        //
+        // private IEnumerator TimerTimer()
+        // {
+        //     var timeLeft = 180f;
+        //     while ((timeLeft -= Time.deltaTime) >= 0)
+        //     {
+        //         _timerText.text = Mathf.FloorToInt(timeLeft).ToString();
+        //         yield return null;
+        //     }
+        //
+        //     RestartGame();
+        // }
+
+        private void OnQRCodeReceived(string data)
         {
-            StartCoroutine(TimerTimer());
+            _qrCodeText.text = data;
         }
 
-        private IEnumerator TimerTimer()
-        {
-            var timeLeft = 180f;
-            while ((timeLeft -= Time.deltaTime) >= 0)
-            {
-                _timerText.text = Mathf.FloorToInt(timeLeft).ToString();
-                yield return null;
-            }
-
-            RestartGame();
-        }
-
-        private void OnConnected()
-        {
-        }
+        private void OnConnected() { }
 
         private void OnMiniDataReceived(MiniPayload payload)
         {
             if (!_minis.TryGetValue(payload.ID, out var mini))
                 mini = SpawnMini(payload.ID);
 
-            mini.Rotate(payload.Left, payload.Right);
+            mini?.Rotate(payload.Left, payload.Right);
+        }
+
+        public void AddBot()
+        {
+            SpawnMini(6 - _minisBots.Count, true);
         }
 
         private void OnMiniDestroyed(Mini mini)
@@ -73,13 +83,18 @@ namespace DefaultNamespace
             mini.Go();
         }
 
-        private Mini SpawnMini(int id)
+        private Mini SpawnMini(int id, bool isBot = false)
         {
+            if (_minisBots.Count + _minis.Count >= 7) return null;
+            
             var mini = Instantiate(miniPrefab);
-            mini.SetTheme(themes[_minis.Count]);
+            mini.SetTheme(themes[id], isBot);
             mini.Destroyed += OnMiniDestroyed;
             mini.transform.position = transform.GetChild(Random.Range(0, transform.childCount)).position;
-            _minis.Add(id, mini);
+            if (isBot)
+                _minisBots.Add(id, mini);
+            else
+                _minis.Add(id, mini);
             mini.Go();
             return mini;
         }

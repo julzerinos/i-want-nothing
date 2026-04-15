@@ -21,6 +21,8 @@ public class Mini : MonoBehaviour
 
     private GameObject _collisionMarker;
 
+    private bool _isBot;
+
     private bool _isSafe;
     private float _safeTimeout;
     private ParticleSystemRenderer _particleSystemRenderer;
@@ -61,8 +63,26 @@ public class Mini : MonoBehaviour
         //          Vector2.one / 2;
         // var collides = _paintLayer.GetCollision(uv.x, uv.y);
         // if (collides && !_isSafe) Destroy();
+
+        _actionTimestep -= Time.deltaTime;
+
+        if (!_isBot || _actionTimestep > 0) return;
+
+        _actionTimestep = .02f;
+
+        if (_actionTimeout < 0)
+        {
+            _actionTimeout = Random.Range(.1f, .25f);
+            _action = Random.Range(-1, 2);
+        }
+
+        _actionTimeout -= Time.deltaTime;
+        Rotate(_action == -1, _action == 1);
     }
 
+    private float _actionTimestep = .02f;
+    private float _actionTimeout;
+    private int _action;
 
     public void Rotate(bool left = false, bool right = false)
     {
@@ -81,13 +101,12 @@ public class Mini : MonoBehaviour
         _safeTimeout = .5f;
     }
 
-    public void SetTheme(MiniTheme theme)
+    public void SetTheme(MiniTheme theme, bool isBot)
     {
-        _faceRenderer.material.color = theme.color;
+        _isBot = isBot;
+        _faceRenderer.material.mainTexture = theme.texture;
         _theme = theme;
-        // _particleSystemRenderer.material.mainTexture = theme.texture;
-        
-        _particleSystemRenderer.material.color = theme.color;
+        _particleSystemRenderer.material.mainTexture = theme.texture;
     }
 
     private void OnTriggerEnter(Collider other)

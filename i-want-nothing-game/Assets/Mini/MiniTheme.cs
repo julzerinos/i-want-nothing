@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace DefaultNamespace
@@ -6,6 +7,6 @@ namespace DefaultNamespace
     public class MiniTheme : ScriptableObject
     {
         public Color color;
-        public Texture2D texture;
+        public Texture texture;
     }
 }

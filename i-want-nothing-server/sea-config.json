@@ -1,0 +1,4 @@
+{
+    "main": "bundle.js",
+    "output": "server.exe"
+}
