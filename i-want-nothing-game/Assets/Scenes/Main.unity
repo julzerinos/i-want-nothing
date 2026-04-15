@@ -6722,7 +6722,7 @@ MonoBehaviour:
 
     ESCAPE:      Toggle this overlay
 
-    Q:           Quit
+    BACKSPACE:   Quit
     the game
 
     CTRL-R:      Restart the game
@@ -7205,7 +7205,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: No connection with server.
+  m_Text: "No connection with server.\nDid you start the game \nwith Start.bat?"
 --- !u!222 &1857458773
 CanvasRenderer:
   m_ObjectHideFlags: 0
